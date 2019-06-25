@@ -7,9 +7,9 @@ However ``go-xorm/cmd`` generates go code from database-source while this reposi
 ### Installation
 
 *[NOTE] Required Go version more than 1.9*
-
+```
 go get -u github.com/Yimismi/sql2go
-
+```
 ---
 
 ### Examples
