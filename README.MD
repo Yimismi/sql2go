@@ -3,10 +3,12 @@
 ---
 This repository is adapted from ``reverse command`` of ``go-xorm/cmd``(https://github.com/go-xorm/cmd/blob/master/xorm/reverse.go).
 However ``go-xorm/cmd`` generates go code from database-source while this repository converts create-statement of mysql to go struct.
----
+
 ### Installation
 *[NOTE] Required Go version more than 1.9*
 go get -u github.com/Yimismi/sql2go
+
+---
 
 ### Examples
 ```$xslt
