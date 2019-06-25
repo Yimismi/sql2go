@@ -121,6 +121,7 @@ func (c *convertArgs) SetGenJson(genJson bool) *convertArgs {
 	c.genJson = genJson
 	return c
 }
+
 func (c *convertArgs) SetTmpl(tmplType TmplType) *convertArgs {
 	switch tmplType {
 	case GOTMPL:
@@ -130,6 +131,11 @@ func (c *convertArgs) SetTmpl(tmplType TmplType) *convertArgs {
 	}
 	return c
 }
+func (c *convertArgs) SetTmplStr(tmpl string) *convertArgs {
+	c.tmpl = tmpl
+	return c
+}
+
 func (c *convertArgs) SetTablePrefix(prefix string) *convertArgs {
 	c.tablePrefix = prefix
 	return c
