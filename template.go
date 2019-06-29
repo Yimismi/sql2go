@@ -305,8 +305,7 @@ func getTag(mapper core.IMapper, genJson bool) func(table *core.Table, col *core
 			nstr += strings.TrimLeft(opts, ",")
 			nstr += ")"
 		}
-		res = append(res, nstr)
-
+		res = append(res, nstr, "'"+col.Name+"'")
 		var tags []string
 		if genJson {
 			tags = append(tags, "json:\""+col.Name+"\"")
