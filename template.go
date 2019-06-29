@@ -191,7 +191,7 @@ func NewGolangTmp(args *convertArgs) *GolangTmp {
 		colMapper = core.NewPrefixMapper(colMapper, args.colPrefix)
 	}
 	if args.tablePrefix != "" {
-		tableMapper = core.NewPrefixMapper(tableMapper, args.colPrefix)
+		tableMapper = core.NewPrefixMapper(tableMapper, args.tablePrefix)
 	}
 	return &GolangTmp{
 		funcs: template.FuncMap{
