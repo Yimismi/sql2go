@@ -110,6 +110,9 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*core.Table, error) {
 		if colType == "DOUBLE UNSIGNED" {
 			colType = "DOUBLE"
 		}
+		if colType == "BLOB BINARY" {
+			colType = "BLOB"
+		}
 		col.Length = len1
 		col.Length2 = len2
 		if _, ok := core.SqlTypes[colType]; ok {
