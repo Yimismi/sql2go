@@ -1,9 +1,9 @@
 package test
 
 import (
+	"github.com/Yimismi/sql2go"
 	"os"
 	"testing"
-	"yimismi/sql2go"
 )
 
 func TestFromFile1(t *testing.T) {
