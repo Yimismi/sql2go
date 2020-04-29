@@ -1,9 +1,9 @@
 package test
 
 import (
-	"github.com/Yimismi/sql2go"
 	"os"
 	"testing"
+	"yimismi/sql2go"
 )
 
 func TestFromFile1(t *testing.T) {
@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS t_person (
   f_age INT(11) NULL,
   f_id INT(11) PRIMARY KEY AUTO_INCREMENT NOT NULL,
   f_name VARCHAR(30) NOT NULL,
-  f_sex VARCHAR(2) NULL
+  f_sex VARCHAR(2) NULL,
+  f_test TEXT
   ) ENGINE=InnoDB;
 `
 	args := sql2go.NewConvertArgs().SetGenJson(true).

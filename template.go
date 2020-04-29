@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/go-xorm/core"
 	"go/format"
 	"io/ioutil"
 	"reflect"
 	"sort"
 	"strings"
 	"text/template"
+	"xorm.io/xorm/names"
+	"xorm.io/xorm/schemas"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 	errNoComparison           error
 	created, updated, deleted []string
 	supportComment            bool
-	snakeMapper               core.SnakeMapper
+	snakeMapper               names.SnakeMapper
 )
 
 func init() {
@@ -68,7 +69,7 @@ type {{TableMapper .Name}} struct {
 	errNoComparison = errors.New("missing argument for comparison")
 	created, updated, deleted = []string{"created_at"}, []string{"updated_at"}, []string{"deleted_at"}
 	supportComment = true
-	snakeMapper = core.SnakeMapper{}
+	snakeMapper = names.SnakeMapper{}
 }
 
 type convertArgs struct {
@@ -81,7 +82,7 @@ type convertArgs struct {
 type GolangTmp struct {
 	funcs      template.FuncMap
 	formater   func([]byte) ([]byte, error)
-	genImports func([]*core.Table) map[string]string
+	genImports func([]*schemas.Table) map[string]string
 	args       *convertArgs
 }
 type kind int
@@ -147,7 +148,7 @@ func (c *convertArgs) SetPackageName(name string) *convertArgs {
 	return c
 }
 
-func (g *GolangTmp) GenerateGo(tables []*core.Table) ([]byte, error) {
+func (g *GolangTmp) GenerateGo(tables []*schemas.Table) ([]byte, error) {
 	t := template.New("sql2go")
 	t.Funcs(g.funcs)
 
@@ -185,15 +186,15 @@ func (g *GolangTmp) GenerateGo(tables []*core.Table) ([]byte, error) {
 }
 
 func NewGolangTmp(args *convertArgs) *GolangTmp {
-	var colMapper core.IMapper
-	var tableMapper core.IMapper
-	colMapper = core.SnakeMapper{}
-	tableMapper = core.SnakeMapper{}
+	var colMapper names.Mapper
+	var tableMapper names.Mapper
+	colMapper = names.SnakeMapper{}
+	tableMapper = names.SnakeMapper{}
 	if args.colPrefix != "" {
-		colMapper = core.NewPrefixMapper(colMapper, args.colPrefix)
+		colMapper = names.NewPrefixMapper(colMapper, args.colPrefix)
 	}
 	if args.tablePrefix != "" {
-		tableMapper = core.NewPrefixMapper(tableMapper, args.tablePrefix)
+		tableMapper = names.NewPrefixMapper(tableMapper, args.tablePrefix)
 	}
 	return &GolangTmp{
 		funcs: template.FuncMap{
@@ -212,8 +213,8 @@ func NewGolangTmp(args *convertArgs) *GolangTmp {
 	}
 }
 
-func getTag(mapper core.IMapper, genJson bool) func(table *core.Table, col *core.Column) string {
-	return func(table *core.Table, col *core.Column) string {
+func getTag(mapper names.Mapper, genJson bool) func(table *schemas.Table, col *schemas.Column) string {
+	return func(table *schemas.Table, col *schemas.Column) string {
 		isNameId := (mapper.Table2Obj(col.Name) == "Id")
 		isIdPk := isNameId && typestring(col) == "int64"
 
@@ -249,18 +250,18 @@ func getTag(mapper core.IMapper, genJson bool) func(table *core.Table, col *core
 			res = append(res, fmt.Sprintf("comment('%s')", col.Comment))
 		}
 
-		names := make([]string, 0, len(col.Indexes))
+		colNames := make([]string, 0, len(col.Indexes))
 		for name := range col.Indexes {
-			names = append(names, name)
+			colNames = append(colNames, name)
 		}
-		sort.Strings(names)
+		sort.Strings(colNames)
 
-		for _, name := range names {
+		for _, name := range colNames {
 			index := table.Indexes[name]
 			var uistr string
-			if index.Type == core.UniqueType {
+			if index.Type == schemas.UniqueType {
 				uistr = "unique"
-			} else if index.Type == core.IndexType {
+			} else if index.Type == schemas.IndexType {
 				uistr = "index"
 			}
 			if len(index.Cols) > 1 {
@@ -458,7 +459,7 @@ func gt(arg1, arg2 interface{}) (bool, error) {
 	return !lessOrEqual, nil
 }
 
-func getCol(cols map[string]*core.Column, name string) *core.Column {
+func getCol(cols map[string]*schemas.Column, name string) *schemas.Column {
 	return cols[strings.ToLower(name)]
 }
 
@@ -470,7 +471,7 @@ func formatGo(src []byte) ([]byte, error) {
 	return source, nil
 }
 
-func genGoImports(tables []*core.Table) map[string]string {
+func genGoImports(tables []*schemas.Table) map[string]string {
 	imports := make(map[string]string)
 
 	for _, table := range tables {
@@ -483,9 +484,9 @@ func genGoImports(tables []*core.Table) map[string]string {
 	return imports
 }
 
-func typestring(col *core.Column) string {
+func typestring(col *schemas.Column) string {
 	st := col.SQLType
-	t := core.SQLType2Type(st)
+	t := schemas.SQLType2Type(st)
 	s := t.String()
 	if s == "[]uint8" {
 		return "[]byte"
