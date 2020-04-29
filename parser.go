@@ -3,16 +3,16 @@ package sql2go
 import (
 	"bytes"
 	"fmt"
-	"github.com/go-xorm/core"
 	"github.com/knocknote/vitess-sqlparser/tidbparser/ast"
 	tidbparser "github.com/knocknote/vitess-sqlparser/tidbparser/parser"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+	"xorm.io/xorm/schemas"
 )
 
-func ParseSqlFile(fileName string) ([]*core.Table, error) {
+func ParseSqlFile(fileName string) ([]*schemas.Table, error) {
 	bs, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return nil, err
@@ -21,9 +21,9 @@ func ParseSqlFile(fileName string) ([]*core.Table, error) {
 	return ParseSql(sql)
 }
 
-func ParseSql(sql string) ([]*core.Table, error) {
+func ParseSql(sql string) ([]*schemas.Table, error) {
 
-	tables := make([]*core.Table, 0)
+	tables := make([]*schemas.Table, 0)
 
 	stmts, err := tidbparser.New().Parse(sql, "", "")
 	if err != nil {
@@ -43,8 +43,8 @@ func ParseSql(sql string) ([]*core.Table, error) {
 	return tables, nil
 }
 
-func cvtDDL2Table(cs *ast.CreateTableStmt) (*core.Table, error) {
-	table := core.NewEmptyTable()
+func cvtDDL2Table(cs *ast.CreateTableStmt) (*schemas.Table, error) {
+	table := schemas.NewEmptyTable()
 	table.Name = cs.Table.Name.String()
 	table.StoreEngine = "InnoDB"
 	for _, op := range cs.Options {
@@ -57,10 +57,10 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*core.Table, error) {
 		}
 	}
 	// parse columns
-	cols := make(map[string]*core.Column)
+	cols := make(map[string]*schemas.Column)
 	colSeq := make([]string, 0)
 	for _, c := range cs.Cols {
-		col := new(core.Column)
+		col := new(schemas.Column)
 		col.Indexes = make(map[string]int)
 		col.Name = c.Name.Name.String()
 		col.Nullable = true
@@ -73,7 +73,7 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*core.Table, error) {
 		var len1, len2 int
 		if len(cts) == 2 {
 			idx := strings.Index(cts[1], ")")
-			if colType == core.Enum && cts[1][0] == '\'' { //enum
+			if colType == schemas.Enum && cts[1][0] == '\'' { //enum
 				options := strings.Split(cts[1][0:idx], ",")
 				col.EnumOptions = make(map[string]int)
 				for k, v := range options {
@@ -81,7 +81,7 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*core.Table, error) {
 					v = strings.Trim(v, "'")
 					col.EnumOptions[v] = k
 				}
-			} else if colType == core.Set && cts[1][0] == '\'' {
+			} else if colType == schemas.Set && cts[1][0] == '\'' {
 				options := strings.Split(cts[1][0:idx], ",")
 				col.SetOptions = make(map[string]int)
 				for k, v := range options {
@@ -115,8 +115,8 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*core.Table, error) {
 		}
 		col.Length = len1
 		col.Length2 = len2
-		if _, ok := core.SqlTypes[colType]; ok {
-			col.SQLType = core.SQLType{Name: colType, DefaultLength: len1, DefaultLength2: len2}
+		if _, ok := schemas.SqlTypes[colType]; ok {
+			col.SQLType = schemas.SQLType{Name: colType, DefaultLength: len1, DefaultLength2: len2}
 		} else {
 			return nil, fmt.Errorf("Unknown colType %v", colType)
 		}

@@ -1,7 +1,7 @@
 package sql2go
 
 import (
-	"github.com/go-xorm/core"
+	"xorm.io/xorm/schemas"
 )
 
 func FromSql(sql string, args *convertArgs) ([]byte, error) {
@@ -14,7 +14,7 @@ func FromFile(fileName string, args *convertArgs) ([]byte, error) {
 	return generateCode(fileName, parse, args)
 }
 
-func generateCode(src string, parse func(string) ([]*core.Table, error), args *convertArgs) ([]byte, error) {
+func generateCode(src string, parse func(string) ([]*schemas.Table, error), args *convertArgs) ([]byte, error) {
 	tables, err := parse(src)
 	if err != nil {
 		return nil, err

@@ -1,9 +1,11 @@
 package sql2go
 
-import "github.com/go-xorm/core"
+import (
+	"xorm.io/xorm/schemas"
+)
 
 type TmpData struct {
-	Tables  []*core.Table
+	Tables  []*schemas.Table
 	Imports map[string]string
 	Models  string
 }
