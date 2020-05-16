@@ -2,7 +2,6 @@ package test
 
 import (
 	"github.com/Yimismi/sql2go"
-	"os"
 	"testing"
 )
 
@@ -13,17 +12,12 @@ func TestFromFile1(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	f, err := os.Create("db_struct1.go")
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer f.Close()
-	f.Write(code)
+	t.Log(string(code))
 }
 func TestFromFile2(t *testing.T) {
 	args := sql2go.NewConvertArgs().
-		SetPackageName("test").SetTmpl(sql2go.GOTMPL).
+		SetPackageName("test").
+		SetGenXorm(true).
 		SetColPrefix("f_").
 		SetTablePrefix("t_")
 
@@ -32,13 +26,7 @@ func TestFromFile2(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	f, err := os.Create("db_struct2.go")
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer f.Close()
-	f.Write(code)
+	t.Log(string(code))
 }
 
 func TestFromSql1(t *testing.T) {
@@ -51,7 +39,9 @@ CREATE TABLE IF NOT EXISTS t_person (
   f_test TEXT
   ) ENGINE=InnoDB;
 `
-	args := sql2go.NewConvertArgs().SetGenJson(true).
+	args := sql2go.NewConvertArgs().
+		SetGenJson(true).
+		SetGenXorm(true).
 		SetPackageName("test").
 		SetColPrefix("f_").
 		SetTablePrefix("t_")
@@ -61,11 +51,5 @@ CREATE TABLE IF NOT EXISTS t_person (
 		t.Error(err)
 		return
 	}
-	f, err := os.Create("db_struct3.go")
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer f.Close()
-	f.Write(code)
+	t.Log(string(code))
 }

@@ -16,7 +16,6 @@ import (
 
 var (
 	GoXormTmp                 string
-	GoTmp                     string
 	errBadComparisonType      error
 	errBadComparison          error
 	errNoComparison           error
@@ -44,26 +43,6 @@ type {{TableMapper .Name}} struct {
 }
 {{end}}
 `
-
-	GoTmp = `{{/*
-*/}}package {{.Models}}
-
-{{$ilen := len .Imports}}
-{{if gt $ilen 0}}
-import (
-	{{range .Imports}}"{{.}}"{{end}}
-)
-{{end}}
-
-{{range .Tables}}
-type {{TableMapper .Name}} struct {
-{{$table := .}}
-{{range .Columns}}	{{ColMapper .Name}}	{{Type .}}
-{{end}}
-}
-
-{{end}}
-`
 	errBadComparisonType = errors.New("invalid type for comparison")
 	errBadComparison = errors.New("incompatible types for comparison")
 	errNoComparison = errors.New("missing argument for comparison")
@@ -76,6 +55,7 @@ type convertArgs struct {
 	colPrefix   string
 	tablePrefix string
 	genJson     bool
+	genXorm     bool
 	tmpl        string
 	packageName string
 }
@@ -126,14 +106,20 @@ func (c *convertArgs) SetGenJson(genJson bool) *convertArgs {
 }
 
 func (c *convertArgs) SetTmpl(tmplType TmplType) *convertArgs {
-	switch tmplType {
-	case GOTMPL:
-		c.tmpl = GoTmp
-	case GOXORMTMPL:
-		c.tmpl = GoXormTmp
+	c.tmpl = GoXormTmp
+	if tmplType == GOTMPL {
+		c.SetGenXorm(false)
+	} else {
+		c.SetGenXorm(true)
 	}
 	return c
 }
+
+func (c *convertArgs) SetGenXorm(gen bool) *convertArgs {
+	c.genXorm = gen
+	return c
+}
+
 func (c *convertArgs) SetTmplStr(tmpl string) *convertArgs {
 	c.tmpl = tmpl
 	return c
@@ -201,7 +187,7 @@ func NewGolangTmp(args *convertArgs) *GolangTmp {
 			"ColMapper":   colMapper.Table2Obj,
 			"TableMapper": tableMapper.Table2Obj,
 			"Type":        typestring,
-			"Tag":         getTag(colMapper, args.genJson),
+			"Tag":         getTag(colMapper, args.genJson, args.genXorm),
 			"UnTitle":     unTitle,
 			"gt":          gt,
 			"getCol":      getCol,
@@ -213,7 +199,7 @@ func NewGolangTmp(args *convertArgs) *GolangTmp {
 	}
 }
 
-func getTag(mapper names.Mapper, genJson bool) func(table *schemas.Table, col *schemas.Column) string {
+func getTag(mapper names.Mapper, genJson bool, genXorm bool) func(table *schemas.Table, col *schemas.Column) string {
 	return func(table *schemas.Table, col *schemas.Column) string {
 		isNameId := (mapper.Table2Obj(col.Name) == "Id")
 		isIdPk := isNameId && typestring(col) == "int64"
@@ -315,7 +301,7 @@ func getTag(mapper names.Mapper, genJson bool) func(table *schemas.Table, col *s
 			jsonName = snakeMapper.Obj2Table(jsonName)
 			tags = append(tags, "json:\""+jsonName+"\"")
 		}
-		if len(res) > 0 {
+		if len(res) > 0 && genXorm {
 			tags = append(tags, "xorm:\""+strings.Join(res, " ")+"\"")
 		}
 		if len(tags) > 0 {
