@@ -63,7 +63,7 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*schemas.Table, error) {
 		col := new(schemas.Column)
 		col.Indexes = make(map[string]int)
 		col.Name = c.Name.Name.String()
-		col.Nullable = false
+		col.Nullable = true
 
 		// parse columns type
 		colType := c.Tp.String()
