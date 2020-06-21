@@ -63,7 +63,7 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*schemas.Table, error) {
 		col := new(schemas.Column)
 		col.Indexes = make(map[string]int)
 		col.Name = c.Name.Name.String()
-		col.Nullable = true
+		col.Nullable = false
 
 		// parse columns type
 		colType := c.Tp.String()
@@ -144,8 +144,10 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*schemas.Table, error) {
 				col.IsAutoIncrement = true
 			case ast.ColumnOptionPrimaryKey:
 				col.IsPrimaryKey = true
-
+			case ast.ColumnOptionNull:
+				col.Nullable = true
 			}
+
 		}
 		if col.SQLType.IsText() || col.SQLType.IsTime() {
 			if col.Default != "" {

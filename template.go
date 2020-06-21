@@ -58,6 +58,7 @@ type convertArgs struct {
 	genXorm     bool
 	tmpl        string
 	packageName string
+	otherTags   string
 }
 type GolangTmp struct {
 	funcs      template.FuncMap
@@ -134,6 +135,11 @@ func (c *convertArgs) SetPackageName(name string) *convertArgs {
 	return c
 }
 
+func (c *convertArgs) SetOtherTags(tags string) *convertArgs {
+	c.otherTags = tags
+	return c
+}
+
 func (g *GolangTmp) GenerateGo(tables []*schemas.Table) ([]byte, error) {
 	t := template.New("sql2go")
 	t.Funcs(g.funcs)
@@ -182,12 +188,25 @@ func NewGolangTmp(args *convertArgs) *GolangTmp {
 	if args.tablePrefix != "" {
 		tableMapper = names.NewPrefixMapper(tableMapper, args.tablePrefix)
 	}
+	otherTags := make([]string, 0)
+	for _, s := range strings.Split(args.otherTags, ",") {
+		for _, ss := range strings.Split(s, " ") {
+			for _, sss := range strings.Split(ss, "\t") {
+				for _, ssss := range strings.Split(sss, ";") {
+					ts := strings.TrimSpace(ssss)
+					if len(ts) != 0 {
+						otherTags = append(otherTags, ts)
+					}
+				}
+			}
+		}
+	}
 	return &GolangTmp{
 		funcs: template.FuncMap{
 			"ColMapper":   colMapper.Table2Obj,
 			"TableMapper": tableMapper.Table2Obj,
 			"Type":        typestring,
-			"Tag":         getTag(colMapper, args.genJson, args.genXorm),
+			"Tag":         getTag(colMapper, args.genJson, args.genXorm, otherTags),
 			"UnTitle":     unTitle,
 			"gt":          gt,
 			"getCol":      getCol,
@@ -199,7 +218,7 @@ func NewGolangTmp(args *convertArgs) *GolangTmp {
 	}
 }
 
-func getTag(mapper names.Mapper, genJson bool, genXorm bool) func(table *schemas.Table, col *schemas.Column) string {
+func getTag(mapper names.Mapper, genJson bool, genXorm bool, otherTags []string) func(table *schemas.Table, col *schemas.Column) string {
 	return func(table *schemas.Table, col *schemas.Column) string {
 		isNameId := (mapper.Table2Obj(col.Name) == "Id")
 		isIdPk := isNameId && typestring(col) == "int64"
@@ -296,10 +315,18 @@ func getTag(mapper names.Mapper, genJson bool, genXorm bool) func(table *schemas
 		}
 		res = append(res, nstr, "'"+col.Name+"'")
 		var tags []string
+		jsonName := mapper.Table2Obj(col.Name)
+		jsonName = snakeMapper.Obj2Table(jsonName)
 		if genJson {
-			jsonName := mapper.Table2Obj(col.Name)
-			jsonName = snakeMapper.Obj2Table(jsonName)
 			tags = append(tags, "json:\""+jsonName+"\"")
+		}
+		if len(otherTags) != 0 {
+			for _, t := range otherTags {
+				if t == "json" {
+					continue
+				}
+				tags = append(tags, fmt.Sprintf("%s:\"%s\"", t, jsonName))
+			}
 		}
 		if len(res) > 0 && genXorm {
 			tags = append(tags, "xorm:\""+strings.Join(res, " ")+"\"")
@@ -476,6 +503,9 @@ func typestring(col *schemas.Column) string {
 	s := t.String()
 	if s == "[]uint8" {
 		return "[]byte"
+	}
+	if col.Nullable && !strings.HasPrefix(s, "[]") {
+		return "*" + s
 	}
 	return s
 }

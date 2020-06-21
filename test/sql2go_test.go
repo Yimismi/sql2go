@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS t_person (
 		SetGenXorm(true).
 		SetPackageName("test").
 		SetColPrefix("f_").
-		SetTablePrefix("t_")
+		SetTablePrefix("t_").
+		SetOtherTags("db,json xlsx")
 
 	code, err := sql2go.FromSql(sql, args)
 	if err != nil {
