@@ -25,17 +25,8 @@ var (
 )
 
 func init() {
-	GoXormTmp = `{{/*
-*/}}package {{.Models}}
-
-{{$ilen := len .Imports}}
-{{if gt $ilen 0}}
-import (
-	{{range .Imports}}"{{.}}"{{end}}
-)
-{{end}}
-
-{{range .Tables}}
+	GoXormTmp = `
+{{- range .Tables}}
 type {{TableMapper .Name}} struct {
 {{$table := .}}
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{ColMapper $col.Name}}	{{Type $col}} {{Tag $table $col}}
@@ -57,14 +48,12 @@ type convertArgs struct {
 	genJson     bool
 	genXorm     bool
 	tmpl        string
-	packageName string
 	otherTags   string
 }
 type GolangTmp struct {
-	funcs      template.FuncMap
-	formater   func([]byte) ([]byte, error)
-	genImports func([]*schemas.Table) map[string]string
-	args       *convertArgs
+	funcs    template.FuncMap
+	formater func([]byte) ([]byte, error)
+	args     *convertArgs
 }
 type kind int
 
@@ -93,7 +82,6 @@ func NewConvertArgs() *convertArgs {
 		tablePrefix: "",
 		genJson:     false,
 		tmpl:        GoXormTmp,
-		packageName: "db",
 	}
 }
 
@@ -130,10 +118,6 @@ func (c *convertArgs) SetTablePrefix(prefix string) *convertArgs {
 	c.tablePrefix = prefix
 	return c
 }
-func (c *convertArgs) SetPackageName(name string) *convertArgs {
-	c.packageName = name
-	return c
-}
 
 func (c *convertArgs) SetOtherTags(tags string) *convertArgs {
 	c.otherTags = tags
@@ -148,11 +132,10 @@ func (g *GolangTmp) GenerateGo(tables []*schemas.Table) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	imports := g.genImports(tables)
 
 	newbytes := bytes.NewBufferString("")
 
-	d := &TmpData{Tables: tables, Imports: imports, Models: g.args.packageName}
+	d := &TmpData{Tables: tables}
 
 	err = tmpl.Execute(newbytes, d)
 
@@ -212,9 +195,8 @@ func NewGolangTmp(args *convertArgs) *GolangTmp {
 			"getCol":      getCol,
 			"UpperTitle":  upTitle,
 		},
-		formater:   formatGo,
-		genImports: genGoImports,
-		args:       args,
+		formater: formatGo,
+		args:     args,
 	}
 }
 
@@ -484,19 +466,6 @@ func formatGo(src []byte) ([]byte, error) {
 	return source, nil
 }
 
-func genGoImports(tables []*schemas.Table) map[string]string {
-	imports := make(map[string]string)
-
-	for _, table := range tables {
-		for _, col := range table.Columns() {
-			if typestring(col) == "time.Time" {
-				imports["time"] = "time"
-			}
-		}
-	}
-	return imports
-}
-
 func typestring(col *schemas.Column) string {
 	st := col.SQLType
 	t := schemas.SQLType2Type(st)
@@ -504,8 +473,22 @@ func typestring(col *schemas.Column) string {
 	if s == "[]uint8" {
 		return "[]byte"
 	}
-	if col.Nullable && !strings.HasPrefix(s, "[]") {
-		return "*" + s
+	if col.Nullable {
+		switch t.Kind() {
+		case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint8, reflect.Uint16:
+			return "sql.NullInt32"
+		case reflect.Int, reflect.Int64, reflect.Uint32, reflect.Uint64:
+			return "sql.NullInt64"
+		case reflect.Bool:
+			return "sql.NullBool"
+		case reflect.Float32, reflect.Float64:
+			return "sql.NullFloat64"
+		case reflect.String:
+			return "sql.NullString"
+		}
+		if t.String() == "time.Time" {
+			return "sql.NullTime"
+		}
 	}
 	return s
 }

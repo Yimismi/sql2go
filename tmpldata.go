@@ -5,7 +5,5 @@ import (
 )
 
 type TmpData struct {
-	Tables  []*schemas.Table
-	Imports map[string]string
-	Models  string
+	Tables []*schemas.Table
 }

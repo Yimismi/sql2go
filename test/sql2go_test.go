@@ -6,7 +6,7 @@ import (
 )
 
 func TestFromFile1(t *testing.T) {
-	args := sql2go.NewConvertArgs().SetGenJson(true).SetPackageName("test")
+	args := sql2go.NewConvertArgs().SetGenJson(true)
 	code, err := sql2go.FromFile("./1.sql", args)
 	if err != nil {
 		t.Error(err)
@@ -16,7 +16,6 @@ func TestFromFile1(t *testing.T) {
 }
 func TestFromFile2(t *testing.T) {
 	args := sql2go.NewConvertArgs().
-		SetPackageName("test").
 		SetGenXorm(true).
 		SetColPrefix("f_").
 		SetTablePrefix("t_")
@@ -42,7 +41,6 @@ CREATE TABLE IF NOT EXISTS t_person (
 	args := sql2go.NewConvertArgs().
 		SetGenJson(true).
 		SetGenXorm(true).
-		SetPackageName("test").
 		SetColPrefix("f_").
 		SetTablePrefix("t_").
 		SetOtherTags("db,json xlsx")
