@@ -302,6 +302,9 @@ func getTag(mapper names.Mapper, genJson bool, genXorm bool, otherTags []string)
 		if genJson {
 			tags = append(tags, "json:\""+jsonName+"\"")
 		}
+		if len(res) > 0 && genXorm {
+			tags = append(tags, "xorm:\""+strings.Join(res, " ")+"\"")
+		}
 		if len(otherTags) != 0 {
 			for _, t := range otherTags {
 				if t == "json" {
@@ -309,9 +312,6 @@ func getTag(mapper names.Mapper, genJson bool, genXorm bool, otherTags []string)
 				}
 				tags = append(tags, fmt.Sprintf("%s:\"%s\"", t, jsonName))
 			}
-		}
-		if len(res) > 0 && genXorm {
-			tags = append(tags, "xorm:\""+strings.Join(res, " ")+"\"")
 		}
 		if len(tags) > 0 {
 			return "`" + strings.Join(tags, " ") + "`"
