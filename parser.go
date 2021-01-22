@@ -144,6 +144,7 @@ func cvtDDL2Table(cs *ast.CreateTableStmt) (*schemas.Table, error) {
 				col.IsAutoIncrement = true
 			case ast.ColumnOptionPrimaryKey:
 				col.IsPrimaryKey = true
+				col.Nullable = false
 			case ast.ColumnOptionNull:
 				col.Nullable = true
 			}

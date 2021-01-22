@@ -26,7 +26,8 @@ var (
 
 func init() {
 	GoXormTmp = `
-{{- range .Tables}}
+{{- range .Tables -}}
+// SELECT: {{SelectRawSql .}}
 type {{TableMapper .Name}} struct {
 {{$table := .}}
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{ColMapper $col.Name}}	{{Type $col}} {{Tag $table $col}}
@@ -186,14 +187,15 @@ func NewGolangTmp(args *convertArgs) *GolangTmp {
 	}
 	return &GolangTmp{
 		funcs: template.FuncMap{
-			"ColMapper":   colMapper.Table2Obj,
-			"TableMapper": tableMapper.Table2Obj,
-			"Type":        typestring,
-			"Tag":         getTag(colMapper, args.genJson, args.genXorm, otherTags),
-			"UnTitle":     unTitle,
-			"gt":          gt,
-			"getCol":      getCol,
-			"UpperTitle":  upTitle,
+			"ColMapper":    colMapper.Table2Obj,
+			"TableMapper":  tableMapper.Table2Obj,
+			"Type":         typestring,
+			"Tag":          getTag(colMapper, args.genJson, args.genXorm, otherTags),
+			"UnTitle":      unTitle,
+			"gt":           gt,
+			"getCol":       getCol,
+			"UpperTitle":   upTitle,
+			"SelectRawSql": GetSelectRawSql,
 		},
 		formater: formatGo,
 		args:     args,
@@ -500,4 +502,13 @@ func include(source []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func GetSelectRawSql(table *schemas.Table) string {
+	colNames := make([]string, 0, len(table.Columns()))
+	for _, v := range table.ColumnsSeq() {
+		col := table.GetColumn(v)
+		colNames = append(colNames, "`"+col.Name+"`")
+	}
+	return fmt.Sprintf("SELECT %s FROM `%s`", strings.Join(colNames, ", "), table.Name)
 }
